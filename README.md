@@ -1,5 +1,7 @@
 # Spark Druid Segment Reader #
 
+[![CI/CD](https://github.com/deep-bi/spark-druid-segment-reader/actions/workflows/scala.yml/badge.svg)](https://github.com/deep-bi/spark-druid-segment-reader/actions/workflows/scala.yml)
+
 ## Quick summary
 
 __Spark Druid Segment Reader__ is a Spark connector that extends Spark DataFrame reader and supports directly reading
