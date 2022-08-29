@@ -51,7 +51,7 @@ where `properties` is a dictionary containing read configuration.
 |    `start_date`     | String  |                                       `"YYYY-MM-DD"`                                       |   Yes    |                          -                           |
 |     `end_date`      | String  |                                       `"YYYY-MM-DD"`                                       |   Yes    |                          -                           |
 |  `druid_timestamp`  | String  | name of the additional output column representing the timestamps extracted from druid rows |    No    | druid row timestamp is not added to the final schema |
-|    `input_path`     | String  |                           full path to druid_data_source folder                            |    No    |      `"s3a://s3-deep-storage/druid/segments/"`       |
+|    `input_path`     | String  |                           full path to druid_data_source folder                            |   Yes    |      `"s3a://s3-deep-storage/druid/segments/"`       |
 | `temp_segment_dir`  | String  |            full or relative path to temporary folder which will store segments             |    No    |                   `/tmp/segments`                    |
 
 Example:
