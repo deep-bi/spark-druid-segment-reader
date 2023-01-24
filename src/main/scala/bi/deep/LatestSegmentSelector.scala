@@ -50,8 +50,8 @@ object LatestSegmentSelector {
 
   def listPrimaryPartitions(dates: List[(LocalDate, LocalDate)], path: String): List[String] = {
     path.split(':')(0) match {
-      case "s3a" | "s3" => dates.map(x => path + s"${x._1}T00:00:00.000Z_${x._2}T00:00:00.000Z")
       case "hdfs" => dates.map(x => path + s"${x._1}T00_00_00.000Z_${x._2}T00_00_00.000Z")
+      case _ => dates.map(x => path + s"${x._1}T00:00:00.000Z_${x._2}T00:00:00.000Z")
     }
   }
 }

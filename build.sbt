@@ -4,7 +4,7 @@ ThisBuild / version := "0.2.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.11.12"
 
-val sparkVersion = "2.3.4"
+val sparkVersion = "2.4.8"
 val hadoopVersion = "2.7.2"
 val druidVersion = "0.22.1"
 

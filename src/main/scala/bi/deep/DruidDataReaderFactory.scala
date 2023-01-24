@@ -1,12 +1,11 @@
 package bi.deep
 
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.sources.v2.reader.{DataReader, DataReaderFactory}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.sources.v2.reader.{InputPartition, InputPartitionReader}
 import org.apache.spark.sql.types.StructType
 
 
 case class DruidDataReaderFactory(filePath: String, schema: StructType, config: Config)
-  extends DataReaderFactory[Row] {
-
-  override def createDataReader(): DataReader[Row] = DruidDataReader(filePath, schema, config)
+  extends InputPartition[InternalRow] {
+  override def createPartitionReader(): InputPartitionReader[InternalRow] = DruidDataReader(filePath, schema, config)
 }

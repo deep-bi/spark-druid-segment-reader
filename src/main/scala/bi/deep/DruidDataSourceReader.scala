@@ -1,8 +1,10 @@
 package bi.deep
 
+import org.apache.druid.common.guava.GuavaUtils
 import org.apache.hadoop.fs.LocatedFileStatus
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.sources.v2.reader.{DataReaderFactory, DataSourceReader}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.sources.v2.reader.{DataSourceReader, InputPartition}
 import org.apache.spark.sql.types.StructType
 
 import java.util
@@ -16,16 +18,17 @@ class DruidDataSourceReader(config: Config) extends DataSourceReader {
   private lazy val schema: StructType = readSchema()
 
 
+
   override def readSchema(): StructType = {
     val schemaReader = new DruidSchemaReader(mainPath, config)
     schemaReader.calculateSchema(filesPaths)
   }
 
-  private def fileToReaderFactory(file: LocatedFileStatus): DataReaderFactory[Row] = {
+  private def fileToReaderFactory(file: LocatedFileStatus): InputPartition[InternalRow] = {
     DruidDataReaderFactory(file.getPath.toString, schema, config)
   }
 
-  override def createDataReaderFactories(): util.List[DataReaderFactory[Row]] = {
+  override def planInputPartitions(): util.List[InputPartition[InternalRow]] = {
     filesPaths.toList.map(fileToReaderFactory).asJava
   }
 }

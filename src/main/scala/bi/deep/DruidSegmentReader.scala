@@ -1,13 +1,21 @@
 package bi.deep
 
 import bi.deep.Config.DRUID_SEGMENT_FILE
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.inject.Key
 import org.apache.commons.codec.digest.DigestUtils.sha1Hex
 import org.apache.commons.io.FileUtils
 import org.apache.druid.common.config.NullHandling
+import org.apache.druid.guice.annotations.Json
+import org.apache.druid.guice.{GuiceInjectableValues, GuiceInjectors}
 import org.apache.druid.jackson.DefaultObjectMapper
+import org.apache.druid.java.util.emitter.EmittingLogger
 import org.apache.druid.query.DruidProcessingConfig
 import org.apache.druid.segment.IndexIO
+import org.apache.druid.segment.column.ColumnConfig
 import org.apache.hadoop.fs.Path
+import org.apache.log4j.{Level, Logger}
+import org.slf4j.LoggerFactory
 
 import java.io.File
 import java.nio.file.Files
@@ -18,8 +26,18 @@ trait DruidSegmentReader {
   DruidSegmentReader.init()
 
   def indexIO: IndexIO = {
-    new IndexIO(
-      new DefaultObjectMapper(),
+    // https://www.tabnine.com/code/java/classes/org.apache.druid.guice.GuiceInjectors
+    val injector = GuiceInjectors.makeStartupInjector()
+    val injectables = new GuiceInjectableValues(injector)
+
+    // Mark as ERROR level to not display warnings with unreadable segment
+    Logger.getLogger(classOf[IndexIO]).setLevel(Level.ERROR)
+
+    val mapper = injector
+      .getInstance(Key.get(classOf[ObjectMapper], classOf[Json]))
+      .setInjectableValues(injectables)
+
+    new IndexIO(mapper,
       new DruidProcessingConfig {
         override def getFormatString: String = "processing-%s"
       }

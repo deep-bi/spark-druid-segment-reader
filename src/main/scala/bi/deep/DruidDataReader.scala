@@ -1,17 +1,17 @@
 package bi.deep
 
 import org.apache.druid.segment.{DruidRowConverter, QueryableIndexIndexableAdapter}
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.sources.v2.reader.DataReader
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.sources.v2.reader.InputPartitionReader
 import org.apache.spark.sql.types.{StructField, StructType}
 
 import java.io.File
 
 
 case class DruidDataReader(filePath: String, schema: StructType, config: Config)
-  extends DataReader[Row] with DruidSegmentReader {
+  extends InputPartitionReader[InternalRow] with DruidSegmentReader {
 
-  private var current: Option[Row] = None
+  private var current: Option[InternalRow] = None
   private val targetRowSize: Int = schema.size
   private val timestampIdx: Option[Int] = {
     if (config.druidTimestamp != "") Option(schema.fieldIndex(config.druidTimestamp))
@@ -28,7 +28,7 @@ case class DruidDataReader(filePath: String, schema: StructType, config: Config)
       .zipWithIndex
       .filter(f => rowFieldsNames.contains(f._1.name))
 
-    DruidRowConverter(qiia, segmentSchema, targetRowSize, filteredTargetFields, timestampIdx)
+    DruidRowConverter(qiia, schema, segmentSchema, targetRowSize, filteredTargetFields, timestampIdx)
   }
 
   override def next(): Boolean = {
@@ -37,7 +37,7 @@ case class DruidDataReader(filePath: String, schema: StructType, config: Config)
     hadNext
   }
 
-  override def get(): Row = current.get
+  override def get(): InternalRow = current.get
 
   override def close(): Unit = rowConverter.close()
 }
