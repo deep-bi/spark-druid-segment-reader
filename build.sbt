@@ -1,6 +1,6 @@
 import sbt.Keys.excludeDependencies
 
-ThisBuild / version := "0.2.0-SNAPSHOT"
+ThisBuild / version := "0.2.0"
 
 ThisBuild / scalaVersion := "2.11.12"
 
