@@ -1,6 +1,7 @@
 package bi.deep
 
 import org.apache.druid.segment.{DruidRowConverter, QueryableIndexIndexableAdapter}
+import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.v2.reader.InputPartitionReader
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -11,6 +12,9 @@ import java.io.File
 case class DruidDataReader(filePath: String, schema: StructType, config: Config)
   extends InputPartitionReader[InternalRow] with DruidSegmentReader {
 
+  @transient
+  private implicit val fs: FileSystem = config.factory.fileSystemFor(filePath)
+
   private var current: Option[InternalRow] = None
   private val targetRowSize: Int = schema.size
   private val timestampIdx: Option[Int] = {
@@ -18,7 +22,7 @@ case class DruidDataReader(filePath: String, schema: StructType, config: Config)
     else None
   }
 
-  private lazy val rowConverter: DruidRowConverter = withSegment(filePath, config, filePath) { file =>
+  private lazy val rowConverter: DruidRowConverter = withSegment(filePath, config) { file =>
     val qi = indexIO.loadIndex(new File(file.getAbsolutePath))
     val qiia = new QueryableIndexIndexableAdapter(qi)
     val segmentSchema = DruidSchemaReader.readSparkSchema(qi)
