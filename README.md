@@ -79,8 +79,26 @@ sc._jsc.hadoopConfiguration().set("fs.s3a.secret.key", secret_key)
 sc._jsc.hadoopConfiguration().set("fs.s3a.path.style.access", "true")
 ```
 
+## Segment version selection
+
+The connector automatically detects the Apache Druid segments based on the directory structure on Deep Storage (without
+accessing the metadata store). Similarly as in Apache Druid, for every interval only the latest version is loaded. Any
+segment granularity is supported, including mixed (e.g. hourly with daily).
+
+For example, if the storage contains the following segments:
+
+```
+1     2     3     4     5     <- Intervals
+| A 1 | B 2 | C 3 | E 5 |
+|    D 4    |
+```
+
+C, D, and E segments would be selected, while A and B would be skipped (as they were most likely compacted into D,
+that has a newer version).
+
+Thus even if multiple versions of the data exist on the storage, only one version (latest) will be loaded (without
+duplicates).
+
 ## Current limitations
 
 - The connector is reading only the dimensions, skipping all the metrics.
-- Only segments with daily granularity are supported.
-- Only latest interval version can be loaded.

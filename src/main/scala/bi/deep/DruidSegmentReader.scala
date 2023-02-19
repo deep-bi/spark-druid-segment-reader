@@ -8,14 +8,10 @@ import org.apache.commons.io.FileUtils
 import org.apache.druid.common.config.NullHandling
 import org.apache.druid.guice.annotations.Json
 import org.apache.druid.guice.{GuiceInjectableValues, GuiceInjectors}
-import org.apache.druid.jackson.DefaultObjectMapper
-import org.apache.druid.java.util.emitter.EmittingLogger
 import org.apache.druid.query.DruidProcessingConfig
 import org.apache.druid.segment.IndexIO
-import org.apache.druid.segment.column.ColumnConfig
-import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.log4j.{Level, Logger}
-import org.slf4j.LoggerFactory
 
 import java.io.File
 import java.nio.file.Files
@@ -44,9 +40,7 @@ trait DruidSegmentReader {
     )
   }
 
-  def withSegment[R](file: String, config: Config, path: String)(handler: File => R): R = {
-    val fileSystem = config.factory.fileSystemFor(path)
-
+  def withSegment[R](file: String, config: Config)(handler: File => R)(implicit fs: FileSystem): R = {
     val segmentDir = if (config.tempSegmentDir != "") {
       val temp = new File(config.tempSegmentDir, sha1Hex(file))
       FileUtils.forceMkdir(temp)
@@ -57,7 +51,7 @@ trait DruidSegmentReader {
 
     try {
       val segmentFile = new File(segmentDir, DRUID_SEGMENT_FILE)
-      fileSystem.copyToLocalFile(new Path(file), new Path(segmentFile.toURI))
+      fs.copyToLocalFile(new Path(file), new Path(segmentFile.toURI))
       ZipUtils.unzip(segmentFile, segmentDir)
       handler(segmentDir)
     }
