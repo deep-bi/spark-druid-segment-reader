@@ -43,6 +43,7 @@ object SchemaUtils {
     ListMap() ++ result
   }
 
+  //TODO
   def druidToSpark(druidSchema: ListMap[String, ColumnCapabilitiesImpl]): StructType = {
     val structFields = druidSchema.map { case (name, capabilities) =>
       val basicSparkType = capabilities.getType match {

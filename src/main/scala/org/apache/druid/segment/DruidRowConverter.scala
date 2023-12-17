@@ -26,6 +26,8 @@ class DruidRowConverter(rowIt: QueryableIndexIndexableAdapter#RowIteratorImpl, f
 
     filteredTargetFields.foreach { case (targetField, targetFieldIdx) =>
       val rowFieldIndex = segmentSchema.fieldIndex(targetField.name)
+      //TODO
+      val metricSelector = row.getMetricSelector(rowFieldIndex)
       val selector = row.getDimensionSelector(rowFieldIndex)
       val value = selector.getObject
 
