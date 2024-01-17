@@ -32,7 +32,7 @@ class DruidDataSourceReader(config: Config) extends DataSourceReader {
   @transient
   private lazy val schema: StructType = readSchema()
 
-  override def readSchema(): StructType = schemaReader.calculateSchema(filesPaths)
+  override def readSchema(): StructType = schemaReader.calculateSchema(filesPaths).mergeSchema
 
   private def fileToReaderFactory(file: Segment): InputPartition[InternalRow] = {
     DruidDataReaderFactory(file.path.toString, schema, config)

@@ -4,12 +4,10 @@ import org.apache.druid.segment.column.ColumnCapabilities.CoercionLogic
 import org.apache.druid.segment.column.{ColumnCapabilitiesImpl, ValueType}
 import org.apache.spark.sql.types._
 
-import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
 
 object SchemaUtils {
-
 
   lazy val coercionLogic: CoercionLogic = new CoercionLogic() {
     override def dictionaryEncoded(): Boolean = false
@@ -23,29 +21,24 @@ object SchemaUtils {
     override def hasNulls: Boolean = false
   }
 
-  /** Validates the column names in the provided schema and removes all invalid characters, such as:
-   * `,`, `;`, `{`, `}`, `(`, `)`, `=`, and all whitespace characters.
-   *
-   * @param schema Druid schema to validate
-   * @return validated schema
-   */
-  def validateFields(schema: ListMap[String, ColumnCapabilitiesImpl]): ListMap[String, ColumnCapabilitiesImpl] = {
-    schema.map { case (name, capabilities) => validateFieldName(name) -> capabilities }
-  }
-
-  def merge(schemaA: ListMap[String, ColumnCapabilitiesImpl], schemaB: ListMap[String, ColumnCapabilitiesImpl]): ListMap[String, ColumnCapabilitiesImpl] = {
+  private def merge(
+                     columnsA: Array[(String, ColumnCapabilitiesImpl)],
+                     columnsB: Array[(String, ColumnCapabilitiesImpl)]): Array[(String, ColumnCapabilitiesImpl)] = {
     val result = mutable.LinkedHashMap[String, ColumnCapabilitiesImpl]()
-    result ++= schemaA
+    result ++= columnsA
 
-    schemaB.foreach { case (name, capabilities) =>
+    columnsB.foreach { case (name, capabilities) =>
       result += name -> ColumnCapabilitiesImpl.merge(capabilities, result.getOrElse(name, null), coercionLogic)
     }
-    ListMap() ++ result
+    Array() ++ result
   }
 
-  //TODO
-  def druidToSpark(druidSchema: ListMap[String, ColumnCapabilitiesImpl]): StructType = {
-    val structFields = druidSchema.map { case (name, capabilities) =>
+  def mergeSchemas(schemaA: DruidSchema, schemaB: DruidSchema): DruidSchema = {
+    DruidSchema(merge(schemaA.dimensions, schemaB.dimensions), merge(schemaA.metrics, schemaB.metrics))
+  }
+
+  private def structFields(columns: Array[(String, ColumnCapabilitiesImpl)]): Array[StructField] = {
+    columns.map { case (name, capabilities) =>
       val basicSparkType = capabilities.getType match {
         case ValueType.FLOAT => FloatType
         case ValueType.LONG => LongType
@@ -56,9 +49,10 @@ object SchemaUtils {
 
       val sparkType = if (capabilities.hasMultipleValues.isTrue) ArrayType(basicSparkType) else basicSparkType
       StructField(name, sparkType)
-    }.toArray
-    StructType(structFields)
+    }
   }
 
-  private def validateFieldName(name: String): String = name.replaceAll("[\\s,;{}()=]", "")
+  def druidToSpark(druidSchema: DruidSchema): SparkSchema = {
+    SparkSchema(structFields(druidSchema.dimensions), structFields(druidSchema.metrics))
+  }
 }
