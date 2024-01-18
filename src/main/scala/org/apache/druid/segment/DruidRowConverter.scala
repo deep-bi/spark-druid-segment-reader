@@ -29,7 +29,7 @@ class DruidRowConverter(rowIt: QueryableIndexIndexableAdapter#RowIteratorImpl, f
                                       internal: SpecificInternalRow): SpecificInternalRow = {
 
     dimensionsFields.foreach { case (targetField, targetFieldIdx) =>
-      val rowFieldIndex = segmentSchema.mergeSchema.fieldIndex(targetField.name)
+      val rowFieldIndex = segmentSchema.structTypeDimensions.fieldIndex(targetField.name)
       val selector = row.getDimensionSelector(rowFieldIndex)
       val value = selector.getObject
 
@@ -57,9 +57,8 @@ class DruidRowConverter(rowIt: QueryableIndexIndexableAdapter#RowIteratorImpl, f
                                    metricsFields: Array[(StructField, Int)],
                                    internal: SpecificInternalRow): SpecificInternalRow = {
     metricsFields.foreach { case (targetField, targetFieldIdx) =>
-      val rowFieldIndex = segmentSchema.mergeSchema.fieldIndex(targetField.name)
+      val rowFieldIndex = segmentSchema.structTypeMetrics.fieldIndex(targetField.name)
       val selector = row.getMetricSelector(rowFieldIndex)
-
       val value = selector.getObject
 
       internal(targetFieldIdx) = targetField.dataType match {

@@ -27,7 +27,6 @@ case class DruidDataReader(filePath: String, schema: StructType, config: Config)
     val segmentSchema = DruidSchemaReader.readSparkSchema(qisa)
     val rowDimensionsNames = segmentSchema.structTypeDimensions.fieldNames
     val rowMetricsNames = segmentSchema.structTypeMetrics.fieldNames
-//      .mergeSchema.fields.map(_.name).toSet
 
     val filteredTargetDimensions: Array[(StructField, Int)] = schema.fields
       .zipWithIndex

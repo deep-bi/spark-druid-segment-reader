@@ -51,14 +51,14 @@ object DruidSchemaReader {
     val metrics = qisa.getAvailableMetrics.asScala.toArray
     val dimensions = qisa.getAvailableDimensions.iterator().asScala.toArray
 
-    val capabilities = metrics.map { metric =>
-      (metric, qisa.getColumnCapabilities(metric).asInstanceOf[ColumnCapabilitiesImpl])
-    }
-
     val dCapabilities = dimensions.map { dimension =>
       (dimension, qisa.getColumnCapabilities(dimension).asInstanceOf[ColumnCapabilitiesImpl])
     }
 
-    DruidSchema(dCapabilities, capabilities)
+    val mCapabilities = metrics.map { metric =>
+      (metric, qisa.getColumnCapabilities(metric).asInstanceOf[ColumnCapabilitiesImpl])
+    }
+
+    DruidSchema(dCapabilities, mCapabilities)
   }
 }
