@@ -24,13 +24,13 @@ object SchemaUtils {
   private def merge(
                      columnsA: Array[(String, ColumnCapabilitiesImpl)],
                      columnsB: Array[(String, ColumnCapabilitiesImpl)]): Array[(String, ColumnCapabilitiesImpl)] = {
-    val result = mutable.LinkedHashMap[String, ColumnCapabilitiesImpl]()
-    result ++= columnsA
+    val result = mutable.LinkedHashMap[String, ColumnCapabilitiesImpl](columnsA: _*)
 
-    columnsB.foreach { case (name, capabilities) =>
-      result += name -> ColumnCapabilitiesImpl.merge(capabilities, result.getOrElse(name, null), coercionLogic)
-    }
-    Array() ++ result
+    columnsB.foldLeft(result) { case (merged, (name, capabilities)) =>
+      merged += name -> ColumnCapabilitiesImpl.merge(capabilities, merged.getOrElse(name, null), coercionLogic)
+    }.toArray
+
+    result.toArray
   }
 
   def mergeSchemas(schemaA: DruidSchema, schemaB: DruidSchema): DruidSchema = {

@@ -11,8 +11,8 @@ import java.util
 import scala.collection.JavaConverters.asScalaBufferConverter
 
 class DruidRowConverter(rowIt: QueryableIndexIndexableAdapter#RowIteratorImpl, fullSchema: StructType,
-                        segmentSchema: SparkSchema, filteredTargetDimensions: Array[(StructField, Int)],
-                        filteredTargetMetrics: Array[(StructField, Int)], timestampIdx: Option[Int])
+                        sparkSchema: SparkSchema, selectedDimensions: Array[(StructField, Int)],
+                        selectedMetrics: Array[(StructField, Int)], timestampIdx: Option[Int])
   extends Iterator[InternalRow] with AutoCloseable {
 
   private val unsafeProjection = UnsafeProjection.create(fullSchema)
@@ -29,7 +29,7 @@ class DruidRowConverter(rowIt: QueryableIndexIndexableAdapter#RowIteratorImpl, f
                                       internal: SpecificInternalRow): SpecificInternalRow = {
 
     dimensionsFields.foreach { case (targetField, targetFieldIdx) =>
-      val rowFieldIndex = segmentSchema.structTypeDimensions.fieldIndex(targetField.name)
+      val rowFieldIndex = sparkSchema.structTypeDimensions.fieldIndex(targetField.name)
       val selector = row.getDimensionSelector(rowFieldIndex)
       val value = selector.getObject
 
@@ -57,7 +57,7 @@ class DruidRowConverter(rowIt: QueryableIndexIndexableAdapter#RowIteratorImpl, f
                                    metricsFields: Array[(StructField, Int)],
                                    internal: SpecificInternalRow): SpecificInternalRow = {
     metricsFields.foreach { case (targetField, targetFieldIdx) =>
-      val rowFieldIndex = segmentSchema.structTypeMetrics.fieldIndex(targetField.name)
+      val rowFieldIndex = sparkSchema.structTypeMetrics.fieldIndex(targetField.name)
       val selector = row.getMetricSelector(rowFieldIndex)
       val value = selector.getObject
 
@@ -92,8 +92,8 @@ class DruidRowConverter(rowIt: QueryableIndexIndexableAdapter#RowIteratorImpl, f
   private def druidRowToSparkRow(row: RowPointer): InternalRow = {
     val internal = new SpecificInternalRow(fullSchema)
 
-    druidDimensionsToSpark(row, filteredTargetDimensions, internal)
-    druidMetricsToSpark(row, filteredTargetMetrics, internal)
+    druidDimensionsToSpark(row, selectedDimensions, internal)
+    druidMetricsToSpark(row, selectedMetrics, internal)
 
     if (timestampIdx.isDefined)
       internal(timestampIdx.get) = row.getTimestamp
@@ -105,9 +105,9 @@ class DruidRowConverter(rowIt: QueryableIndexIndexableAdapter#RowIteratorImpl, f
 
 object DruidRowConverter {
 
-  def apply(qiia: QueryableIndexIndexableAdapter, fullSchema: StructType, segmentSchema: SparkSchema,
-            filteredTargetDimensions: Array[(StructField, Int)], filteredTargetMetrics: Array[(StructField, Int)],
-            timestampIdx: Option[Int]): DruidRowConverter = {
-    new DruidRowConverter(qiia.getRows, fullSchema, segmentSchema, filteredTargetDimensions, filteredTargetMetrics, timestampIdx)
+  def apply(queryableIndexIndexableAdapter: QueryableIndexIndexableAdapter, fullSchema: StructType,
+            segmentSchema: SparkSchema, selectedDimensions: Array[(StructField, Int)],
+            selectedMetrics: Array[(StructField, Int)], timestampIdx: Option[Int]): DruidRowConverter = {
+    new DruidRowConverter(queryableIndexIndexableAdapter.getRows, fullSchema, segmentSchema, selectedDimensions, selectedMetrics, timestampIdx)
   }
 }

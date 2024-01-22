@@ -21,22 +21,22 @@ case class DruidDataReader(filePath: String, schema: StructType, config: Config)
   }
 
   private lazy val rowConverter: DruidRowConverter = withSegment(filePath, config) { file =>
-    val qi = indexIO.loadIndex(new File(file.getAbsolutePath))
-    val qiia = new QueryableIndexIndexableAdapter(qi)
-    val qisa = new QueryableIndexStorageAdapter(qi)
-    val segmentSchema = DruidSchemaReader.readSparkSchema(qisa)
-    val rowDimensionsNames = segmentSchema.structTypeDimensions.fieldNames
-    val rowMetricsNames = segmentSchema.structTypeMetrics.fieldNames
+    val queryableIndex = indexIO.loadIndex(new File(file.getAbsolutePath))
+    val queryableIndexIndexableAdapter = new QueryableIndexIndexableAdapter(queryableIndex)
+    val queryableIndexStorageAdapter = new QueryableIndexStorageAdapter(queryableIndex)
+    val druidSegmentSchema = DruidSchemaReader.readSparkSchema(queryableIndexStorageAdapter)
+    val druidDimensions = druidSegmentSchema.structTypeDimensions.fieldNames
+    val druidMetrics = druidSegmentSchema.structTypeMetrics.fieldNames
 
-    val filteredTargetDimensions: Array[(StructField, Int)] = schema.fields
+    val selectedDimensions: Array[(StructField, Int)] = schema.fields
       .zipWithIndex
-      .filter(f => rowDimensionsNames.contains(f._1.name))
+      .filter { case (field, _) => druidDimensions.contains(field.name) }
 
-    val filteredTargetMetrics: Array[(StructField, Int)] = schema.fields
+    val selectedMetrics: Array[(StructField, Int)] = schema.fields
       .zipWithIndex
-      .filter(f => rowMetricsNames.contains(f._1.name))
+      .filter { case (field, _) => druidMetrics.contains(field.name) }
 
-    DruidRowConverter(qiia, schema, segmentSchema, filteredTargetDimensions, filteredTargetMetrics, timestampIdx)
+    DruidRowConverter(queryableIndexIndexableAdapter, schema, druidSegmentSchema, selectedDimensions, selectedMetrics, timestampIdx)
   }
 
   override def next(): Boolean = {
