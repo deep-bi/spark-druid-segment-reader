@@ -13,15 +13,13 @@ import scala.collection.immutable.ListMap
 
 case class DruidSchemaReader(config: Config) extends DruidSegmentReader {
   def calculateSparkSchema(files: Seq[Segment])(implicit fs: FileSystem): SparkSchema = {
-    var druidSchemas = files.map { file =>
+    val druidSchemas = files.map { file =>
       withSegment(file.path.toString, config) { segmentDir =>
         val queryableIndex = indexIO.loadIndex(segmentDir)
         val queryableIndexStorageAdapter = new QueryableIndexStorageAdapter(queryableIndex)
         DruidSchemaReader.readDruidSchema(queryableIndexStorageAdapter)
       }
     }
-
-    druidSchemas = druidSchemas.map(druidSchema => druidSchema.validateFields())
 
     val sparkSchema = SchemaUtils.druidToSpark(druidSchemas.reduce(SchemaUtils.mergeSchemas))
     val sparkDimensions = sparkSchema.structTypeDimensions
@@ -30,12 +28,10 @@ case class DruidSchemaReader(config: Config) extends DruidSegmentReader {
     else {
       if (sparkDimensions.fieldNames.contains(config.druidTimestamp)) {
         sparkDimensions.fields(sparkDimensions.fieldIndex(config.druidTimestamp)) = StructField(config.druidTimestamp, LongType)
-        sparkSchema.updateDimensions(sparkDimensions.fields)
-        sparkSchema
+        sparkSchema.copy(dimensions = sparkDimensions.fields)
       }
       else {
-        sparkSchema.updateDimensions(sparkDimensions.add(config.druidTimestamp, LongType).fields)
-        sparkSchema
+        sparkSchema.copy(dimensions = sparkDimensions.add(config.druidTimestamp, LongType).fields)
       }
     }
   }
@@ -45,19 +41,16 @@ object DruidSchemaReader {
   def readSparkSchema(queryableIndexStorageAdapter: QueryableIndexStorageAdapter):
   SparkSchema = SchemaUtils.druidToSpark(readDruidSchema(queryableIndexStorageAdapter))
 
-  private def readDruidSchema(queryableIndexStorageAdapter: QueryableIndexStorageAdapter): DruidSchema = {
+  private def readDruidSchema(druidStorage: QueryableIndexStorageAdapter): DruidSchema = {
 
-    val metrics = queryableIndexStorageAdapter.getAvailableMetrics.asScala.toArray
-    val dimensions = queryableIndexStorageAdapter.getAvailableDimensions.iterator().asScala.toArray
+    val getCapabilities: String => (String, ColumnCapabilitiesImpl) = column => (column -> druidStorage.getColumnCapabilities(column).asInstanceOf[ColumnCapabilitiesImpl])
 
-    val dCapabilities = dimensions.map { dimension =>
-      (dimension, queryableIndexStorageAdapter.getColumnCapabilities(dimension).asInstanceOf[ColumnCapabilitiesImpl])
-    }
+    val metrics = druidStorage.getAvailableMetrics.asScala
+      .map(getCapabilities).toArray
 
-    val mCapabilities = metrics.map { metric =>
-      (metric, queryableIndexStorageAdapter.getColumnCapabilities(metric).asInstanceOf[ColumnCapabilitiesImpl])
-    }
+    val dimensions = druidStorage.getAvailableDimensions.iterator().asScala
+      .map(getCapabilities).toArray
+    DruidSchema(dimensions, metrics)
 
-    DruidSchema(dCapabilities, mCapabilities)
   }
 }

@@ -9,8 +9,4 @@ case class SparkSchema(
   lazy val mergedSchema: StructType = StructType(dimensions ++ metrics)
   lazy val structTypeDimensions: StructType = StructType(dimensions)
   lazy val structTypeMetrics: StructType = StructType(metrics)
-
-  def updateDimensions(newDimensions: Array[StructField]): SparkSchema = {
-    SparkSchema(newDimensions, metrics)
-  }
 }

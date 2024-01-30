@@ -24,9 +24,9 @@ case class DruidDataReader(filePath: String, schema: StructType, config: Config)
     val queryableIndex = indexIO.loadIndex(new File(file.getAbsolutePath))
     val queryableIndexIndexableAdapter = new QueryableIndexIndexableAdapter(queryableIndex)
     val queryableIndexStorageAdapter = new QueryableIndexStorageAdapter(queryableIndex)
-    val druidSegmentSchema = DruidSchemaReader.readSparkSchema(queryableIndexStorageAdapter)
-    val druidDimensions = druidSegmentSchema.structTypeDimensions.fieldNames
-    val druidMetrics = druidSegmentSchema.structTypeMetrics.fieldNames
+    val sparkSegmentSchema = DruidSchemaReader.readSparkSchema(queryableIndexStorageAdapter)
+    val druidDimensions = sparkSegmentSchema.structTypeDimensions.fieldNames
+    val druidMetrics = sparkSegmentSchema.structTypeMetrics.fieldNames
 
     val selectedDimensions: Array[(StructField, Int)] = schema.fields
       .zipWithIndex
@@ -36,7 +36,7 @@ case class DruidDataReader(filePath: String, schema: StructType, config: Config)
       .zipWithIndex
       .filter { case (field, _) => druidMetrics.contains(field.name) }
 
-    DruidRowConverter(queryableIndexIndexableAdapter, schema, druidSegmentSchema, selectedDimensions, selectedMetrics, timestampIdx)
+    DruidRowConverter(queryableIndexIndexableAdapter, schema, sparkSegmentSchema, selectedDimensions, selectedMetrics, timestampIdx)
   }
 
   override def next(): Boolean = {

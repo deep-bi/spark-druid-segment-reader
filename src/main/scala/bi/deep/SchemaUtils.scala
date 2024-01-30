@@ -24,17 +24,15 @@ object SchemaUtils {
   private def merge(
                      columnsA: Array[(String, ColumnCapabilitiesImpl)],
                      columnsB: Array[(String, ColumnCapabilitiesImpl)]): Array[(String, ColumnCapabilitiesImpl)] = {
-    val result = mutable.LinkedHashMap[String, ColumnCapabilitiesImpl](columnsA: _*)
+    val accumulator = mutable.LinkedHashMap[String, ColumnCapabilitiesImpl](columnsA: _*)
 
-    columnsB.foldLeft(result) { case (merged, (name, capabilities)) =>
+    columnsB.foldLeft(accumulator) { case (merged, (name, capabilities)) =>
       merged += name -> ColumnCapabilitiesImpl.merge(capabilities, merged.getOrElse(name, null), coercionLogic)
     }.toArray
-
-    result.toArray
   }
 
   def mergeSchemas(schemaA: DruidSchema, schemaB: DruidSchema): DruidSchema = {
-    DruidSchema(merge(schemaA.dimensions, schemaB.dimensions), merge(schemaA.metrics, schemaB.metrics))
+    DruidSchema(merge(schemaA.getDimensions, schemaB.getDimensions), merge(schemaA.getMetrics, schemaB.getMetrics))
   }
 
   private def structFields(columns: Array[(String, ColumnCapabilitiesImpl)]): Array[StructField] = {
@@ -53,6 +51,6 @@ object SchemaUtils {
   }
 
   def druidToSpark(druidSchema: DruidSchema): SparkSchema = {
-    SparkSchema(structFields(druidSchema.dimensions), structFields(druidSchema.metrics))
+    SparkSchema(structFields(druidSchema.getDimensions), structFields(druidSchema.getMetrics))
   }
 }
