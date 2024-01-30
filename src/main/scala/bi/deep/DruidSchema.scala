@@ -3,16 +3,8 @@ package bi.deep
 import org.apache.druid.segment.column.ColumnCapabilitiesImpl
 
 class DruidSchema private(
-                           dimensions: Array[(String, ColumnCapabilitiesImpl)],
-                           metrics: Array[(String, ColumnCapabilitiesImpl)]) {
-  def getDimensions: Array[(String, ColumnCapabilitiesImpl)] = {
-    dimensions
-  }
-
-  def getMetrics: Array[(String, ColumnCapabilitiesImpl)] = {
-    metrics
-  }
-}
+                           val dimensions: Array[(String, ColumnCapabilitiesImpl)],
+                           val metrics: Array[(String, ColumnCapabilitiesImpl)])
 
 object DruidSchema {
   def apply(

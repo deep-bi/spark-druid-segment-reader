@@ -32,7 +32,7 @@ object SchemaUtils {
   }
 
   def mergeSchemas(schemaA: DruidSchema, schemaB: DruidSchema): DruidSchema = {
-    DruidSchema(merge(schemaA.getDimensions, schemaB.getDimensions), merge(schemaA.getMetrics, schemaB.getMetrics))
+    DruidSchema(merge(schemaA.dimensions, schemaB.dimensions), merge(schemaA.metrics, schemaB.metrics))
   }
 
   private def structFields(columns: Array[(String, ColumnCapabilitiesImpl)]): Array[StructField] = {
@@ -51,6 +51,6 @@ object SchemaUtils {
   }
 
   def druidToSpark(druidSchema: DruidSchema): SparkSchema = {
-    SparkSchema(structFields(druidSchema.getDimensions), structFields(druidSchema.getMetrics))
+    SparkSchema(structFields(druidSchema.dimensions), structFields(druidSchema.metrics))
   }
 }
