@@ -1,6 +1,6 @@
 package bi.deep
 
-import org.apache.druid.segment.{DruidRowConverter, QueryableIndexIndexableAdapter}
+import org.apache.druid.segment.{DruidRowConverter, QueryableIndexIndexableAdapter, QueryableIndexStorageAdapter}
 import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.v2.reader.InputPartitionReader
@@ -14,25 +14,29 @@ case class DruidDataReader(filePath: String, schema: StructType, config: Config)
 
   @transient
   private implicit val fs: FileSystem = config.factory.fileSystemFor(filePath)
-
   private var current: Option[InternalRow] = None
-  private val targetRowSize: Int = schema.size
   private val timestampIdx: Option[Int] = {
     if (config.druidTimestamp != "") Option(schema.fieldIndex(config.druidTimestamp))
     else None
   }
 
   private lazy val rowConverter: DruidRowConverter = withSegment(filePath, config) { file =>
-    val qi = indexIO.loadIndex(new File(file.getAbsolutePath))
-    val qiia = new QueryableIndexIndexableAdapter(qi)
-    val segmentSchema = DruidSchemaReader.readSparkSchema(qi)
-    val rowFieldsNames = segmentSchema.fields.map(_.name).toSet
+    val queryableIndex = indexIO.loadIndex(new File(file.getAbsolutePath))
+    val queryableIndexIndexableAdapter = new QueryableIndexIndexableAdapter(queryableIndex)
+    val queryableIndexStorageAdapter = new QueryableIndexStorageAdapter(queryableIndex)
+    val sparkSegmentSchema = DruidSchemaReader.readSparkSchema(queryableIndexStorageAdapter)
+    val druidDimensions = sparkSegmentSchema.structTypeDimensions.fieldNames
+    val druidMetrics = sparkSegmentSchema.structTypeMetrics.fieldNames
 
-    val filteredTargetFields: Array[(StructField, Int)] = schema.fields
+    val selectedDimensions: Array[(StructField, Int)] = schema.fields
       .zipWithIndex
-      .filter(f => rowFieldsNames.contains(f._1.name))
+      .filter { case (field, _) => druidDimensions.contains(field.name) }
 
-    DruidRowConverter(qiia, schema, segmentSchema, targetRowSize, filteredTargetFields, timestampIdx)
+    val selectedMetrics: Array[(StructField, Int)] = schema.fields
+      .zipWithIndex
+      .filter { case (field, _) => druidMetrics.contains(field.name) }
+
+    DruidRowConverter(queryableIndexIndexableAdapter, schema, sparkSegmentSchema, selectedDimensions, selectedMetrics, timestampIdx)
   }
 
   override def next(): Boolean = {

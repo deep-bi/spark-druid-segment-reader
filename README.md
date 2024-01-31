@@ -101,5 +101,5 @@ duplicates).
 
 ## Current limitations
 
-- The connector is reading only the dimensions, skipping all the metrics ([#5](https://github.com/deep-bi/spark-druid-segment-reader/issues/5)).
+- The connector is reading only the dimensions and primitive types of metrics.
 - Apache Spark 3.x is not supported yet (the latest release is compatible with Apache Spark 2.4 only)

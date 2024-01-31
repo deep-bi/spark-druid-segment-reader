@@ -17,8 +17,6 @@ lazy val root = (project in file("."))
       "org.apache.spark" %% "spark-unsafe" % sparkVersion % Provided,
       "org.apache.spark" %% "spark-catalyst" % sparkVersion % Provided,
       "org.apache.spark" %% "spark-graphx" % sparkVersion % Provided,
-      "com.google.inject" % "guice" % "4.2.3",
-      "com.google.inject.extensions" % "guice-multibindings" % "4.2.3",
       "org.apache.druid" % "druid-server" % druidVersion,
       "org.apache.druid" % "druid-processing" % druidVersion,
       "org.apache.druid" % "druid-core" % druidVersion,
@@ -26,7 +24,7 @@ lazy val root = (project in file("."))
       "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion % Provided,
 
       // tests
-      "org.scalatest" %% "scalatest" % "3.2.12" % Test
+      "org.scalatest" %% "scalatest" % "3.2.13" % Test
     ),
     excludeDependencies ++= Seq(
       "commons-logging" % "commons-logging",
